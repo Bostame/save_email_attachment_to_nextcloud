@@ -16,7 +16,7 @@ This Python script automates the process of fetching emails from an IMAP server,
 
 2. **Dependencies**: Make sure to install the required Python packages. You can install them using `pip`:
     ```
-    pip install imaplib email requests python-dotenv
+    pip install requests python-dotenv
     ```
 
 ## Usage
