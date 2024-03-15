@@ -56,6 +56,90 @@ Attachments are saved locally in the `attachments` directory. If the attachment 
 ## Continuous Execution
 The script runs indefinitely in a loop, periodically fetching emails, processing them, and uploading attachments to Nextcloud. It waits for 30 seconds between each iteration.
 
+
+If you're using an `.env` file for storing passwords and credentials, you can adjust the README accordingly. Here's the updated README:
+
 ---
 
-Include this documentation alongside your code in your GitHub repository for clear understanding and usage by others.
+# Save Email Attachment to Nextcloud - Using systemd
+
+This script automates the process of extracting files from emails and saving them to Nextcloud.
+
+## Prerequisites
+
+- [Miniconda](https://docs.conda.io/en/latest/miniconda.html) installed on your system
+
+## Installation
+
+1. Clone this repository to your local machine:
+
+2. Navigate to the project directory:
+
+    ```bash
+    cd save_email_attachment_to_nextcloud
+    ```
+
+3. Create a conda environment and install dependencies:
+
+    ```bash
+    conda env create -f environment.yml
+    ```
+
+## Usage
+
+1. Activate the conda environment:
+
+    ```bash
+    conda activate save-email-attachment
+    ```
+
+2. Create a systemd service unit: 
+
+    ```bash
+    sudo nano /etc/systemd/system/save-email-attachment.service
+    ```
+
+3. Modify the systemd service unit file `save-email-attachment.service` as follows:
+
+    ```plaintext
+    [Unit]
+    Description=Script for extracting files from email and saving to Nextcloud
+    After=network.target
+
+    [Service]
+    User=root
+    Environment="PATH=/root/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+    WorkingDirectory=/the directory where you cloned the repo/
+    ExecStart=/bin/bash -lc 'source /root/miniconda3/etc/profile.d/conda.sh && conda activate save-email-attachment && /root/miniconda3/envs/save-email-attachment/bin python savefile.py'
+    Restart=always
+
+    [Install]
+    WantedBy=multi-user.target
+    ```
+
+4. Reload systemd and start the service:
+
+    ```bash
+    sudo systemctl daemon-reload
+    sudo systemctl start save-email-attachment.service
+    ```
+
+## Additional Notes
+
+- To stop the service:
+
+    ```bash
+    sudo systemctl stop save-email-attachment.service
+    ```
+
+- To enable the service to start automatically at boot:
+
+    ```bash
+    sudo systemctl enable save-email-attachment.service
+    ```
+
+- To check the service to start automatically at boot:
+
+    ```bash
+    sudo systemctl status save-email-attachment.service
+    ```
