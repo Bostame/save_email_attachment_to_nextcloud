@@ -4,7 +4,28 @@
 This Python script automates the process of fetching emails from an IMAP server, extracting attachments, and uploading them to a Nextcloud instance. It periodically checks for new emails, processes them, and uploads any attachments to Nextcloud, organized into directories based on the email subjects.
 
 ## Setup
-1. **Environment Variables**: Ensure you have a `.env` file in the same directory as the script. Define the following environment variables:
+
+## Prerequisites
+
+- [Miniconda](https://docs.conda.io/en/latest/miniconda.html) installed on your system
+
+## Installation
+
+1. Clone this repository to your local machine:
+
+2. Navigate to the project directory:
+
+    ```bash
+    cd save_email_attachment_to_nextcloud
+    ```
+
+3. Create a conda environment and install dependencies:
+
+    ```bash
+    conda env create -f environment.yml
+    ```
+
+4. **Environment Variables**: Ensure you have correct defination of the following environment variables in the `.env` file. 
     - `IMAP_SERVER`: Your IMAP server address.
     - `EMAIL`: Your email address.
     - `IMAP_PASSWORD`: Your IMAP password.
@@ -14,13 +35,14 @@ This Python script automates the process of fetching emails from an IMAP server,
     - `NEXTCLOUD_USERNAME`: Your Nextcloud username.
     - `NEXTCLOUD_PASSWORD`: Your Nextcloud password.
 
-2. **Dependencies**: Make sure to install the required Python packages. You can install them using `pip`:
-    ```
-    pip install requests python-dotenv
-    ```
 
 ## Usage
-Run the script by executing the `email_attachment_to_nextcloud.py` file. It will continuously check for new emails, download attachments, and upload them to Nextcloud.
+
+1. Activate the conda environment:
+    ```bash
+    conda activate save-email-attachment
+    ```
+2. Run the script by executing the `email_attachment_to_nextcloud.py` file. It will continuously check for new emails, download attachments, and upload them to Nextcloud.
 
 ## Implementation Details
 ### Functions
@@ -65,41 +87,13 @@ If you're using an `.env` file for storing passwords and credentials, you can ad
 
 This script automates the process of extracting files from emails and saving them to Nextcloud.
 
-## Prerequisites
-
-- [Miniconda](https://docs.conda.io/en/latest/miniconda.html) installed on your system
-
-## Installation
-
-1. Clone this repository to your local machine:
-
-2. Navigate to the project directory:
-
-    ```bash
-    cd save_email_attachment_to_nextcloud
-    ```
-
-3. Create a conda environment and install dependencies:
-
-    ```bash
-    conda env create -f environment.yml
-    ```
-
-## Usage
-
-1. Activate the conda environment:
-
-    ```bash
-    conda activate save-email-attachment
-    ```
-
-2. Create a systemd service unit: 
+1. Create a systemd service unit: 
 
     ```bash
     sudo nano /etc/systemd/system/save-email-attachment.service
     ```
 
-3. Modify the systemd service unit file `save-email-attachment.service` as follows:
+2. Modify the systemd service unit file `save-email-attachment.service` as follows:
 
     ```plaintext
     [Unit]
@@ -117,7 +111,7 @@ This script automates the process of extracting files from emails and saving the
     WantedBy=multi-user.target
     ```
 
-4. Reload systemd and start the service:
+3. Reload systemd and start the service:
 
     ```bash
     sudo systemctl daemon-reload
