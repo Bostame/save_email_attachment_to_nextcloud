@@ -78,11 +78,6 @@ Attachments are saved locally in the `attachments` directory. If the attachment 
 ## Continuous Execution
 The script runs indefinitely in a loop, periodically fetching emails, processing them, and uploading attachments to Nextcloud. It waits for 30 seconds between each iteration.
 
-
-If you're using an `.env` file for storing passwords and credentials, you can adjust the README accordingly. Here's the updated README:
-
----
-
 # Save Email Attachment to Nextcloud - Using systemd
 
 This script automates the process of extracting files from emails and saving them to Nextcloud.
