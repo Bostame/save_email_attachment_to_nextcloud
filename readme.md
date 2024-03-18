@@ -1,17 +1,22 @@
-# Save Email Attachment to Nextcloud 
+```markdown
+# Save Email Attachment to Nextcloud
 
 ## Overview
 This Python script automates the process of fetching emails from an IMAP server, extracting attachments, and uploading them to a Nextcloud instance. It periodically checks for new emails, processes them, and uploads any attachments to Nextcloud, organized into directories based on the email subjects.
 
 ## Setup
 
-## Prerequisites
+### Prerequisites
 
 - [Miniconda](https://docs.conda.io/en/latest/miniconda.html) installed on your system
 
 ## Installation
 
 1. Clone this repository to your local machine:
+
+    ```bash
+    git clone this repo
+    ```
 
 2. Navigate to the project directory:
 
@@ -25,16 +30,26 @@ This Python script automates the process of fetching emails from an IMAP server,
     conda env create -f environment.yml
     ```
 
-4. **Environment Variables**: Ensure you have correct defination of the following environment variables in the `.env` file. 
-    - `IMAP_SERVER`: Your IMAP server address.
-    - `EMAIL`: Your email address.
-    - `IMAP_PASSWORD`: Your IMAP password.
-    - `IMAP_FOLDER`: The IMAP folder to search for emails (default is INBOX).
-    - `NEXTCLOUD_BASE_URL`: Base URL of your Nextcloud instance.
-    - `NEXTCLOUD_DIRECTORY`: Default directory to save attachments in Nextcloud.
-    - `NEXTCLOUD_USERNAME`: Your Nextcloud username.
-    - `NEXTCLOUD_PASSWORD`: Your Nextcloud password.
+4. **Environment Variables**: Ensure you have correct definition of the following environment variables in the `.env` file. 
 
+    - **IMAP Configuration**:
+        - `IMAP_SERVER`: Your IMAP server address.
+        - `IMAP_PORT`: Port number for IMAP server.
+        - `EMAIL`: Your email address.
+        - `IMAP_PASSWORD`: Your IMAP password.
+        - `IMAP_FOLDER`: The IMAP folder to search for emails (default is INBOX).
+
+    - **SMTP Configuration**:
+        - `SMTP_SERVER`: Your SMTP server address.
+        - `SMTP_PORT`: Port number for SMTP server.
+        - `EMAIL`: Your email address.
+        - `SMTP_PASSWORD`: Your SMTP password.
+
+    - **Nextcloud Configuration**:
+        - `NEXTCLOUD_BASE_URL`: Base URL of your Nextcloud instance.
+        - `NEXTCLOUD_DIRECTORY`: Default directory to save attachments in Nextcloud.
+        - `NEXTCLOUD_USERNAME`: Your Nextcloud username.
+        - `NEXTCLOUD_PASSWORD`: Your Nextcloud password.
 
 ## Usage
 
@@ -56,12 +71,24 @@ This Python script automates the process of fetching emails from an IMAP server,
     - Connects to the IMAP server, fetches emails from the specified folder, and processes them.
     - Extracts attachments from emails and saves them locally.
     - Uploads attachments to Nextcloud based on the email subjects.
+
+3. **send_acknowledgment_email(sender_email, saved_folder)**:
+    - Sends an acknowledgment email to the sender notifying them that their files have been received and saved to Nextcloud.
+    - Parameters:
+        - `sender_email`: Email address of the sender.
+        - `saved_folder`: Directory where the files are saved in Nextcloud.
     
 ### IMAP Settings
 - `IMAP_SERVER`: The IMAP server address.
+- `IMAP_PORT`: Port number for IMAP server.
 - `EMAIL`: Your email address.
 - `IMAP_PASSWORD`: Your IMAP password.
 - `IMAP_FOLDER`: The IMAP folder to search for emails (default is INBOX).
+
+### SMTP Settings
+- `SMTP_SERVER`: Your SMTP server address.
+- `SMTP_PORT`: Port number for SMTP server.
+- `SMTP_PASSWORD`: Your SMTP password.
 
 ### Nextcloud Configuration
 - `NEXTCLOUD_BASE_URL`: Base URL of your Nextcloud instance.
@@ -106,7 +133,9 @@ This script automates the process of extracting files from emails and saving the
     WantedBy=multi-user.target
     ```
 
-3. Reload systemd and start the service:
+3. Reload systemd and start the
+
+ service:
 
     ```bash
     sudo systemctl daemon-reload
@@ -132,3 +161,4 @@ This script automates the process of extracting files from emails and saving the
     ```bash
     sudo systemctl status save-email-attachment.service
     ```
+```
