@@ -14,7 +14,7 @@ This Python script automates the process of fetching emails from an IMAP server,
 1. Clone this repository to your local machine:
 
     ```bash
-    git clone https://github.com/yourusername/save_email_attachment_to_nextcloud.git
+    git clone https://github.com/Bostame/save_email_attachment_to_nextcloud.git
     ```
 
 2. Navigate to the project directory:
