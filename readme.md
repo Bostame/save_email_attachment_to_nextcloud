@@ -1,4 +1,3 @@
-```markdown
 # Save Email Attachment to Nextcloud
 
 ## Overview
@@ -15,7 +14,7 @@ This Python script automates the process of fetching emails from an IMAP server,
 1. Clone this repository to your local machine:
 
     ```bash
-    git clone this repo
+    git clone https://github.com/yourusername/save_email_attachment_to_nextcloud.git
     ```
 
 2. Navigate to the project directory:
@@ -161,4 +160,3 @@ This script automates the process of extracting files from emails and saving the
     ```bash
     sudo systemctl status save-email-attachment.service
     ```
-```
