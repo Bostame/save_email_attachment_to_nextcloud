@@ -32,46 +32,23 @@ NEXTCLOUD_DIRECTORY = os.getenv('NEXTCLOUD_BASE_URL', 'NEXTCLOUD_DIRECTORY')
 # Directory for saving attachments
 ATTACHMENTS_DIR = './attachments'
 
-def get_unique_filename(directory, filename):
-    base, extension = os.path.splitext(filename)
-    counter = 1
-    unique_filename = filename
-    while os.path.exists(os.path.join(directory, unique_filename)):
-        unique_filename = f"{base}_{counter}{extension}"
-        counter += 1
-    return unique_filename
-
-def save_attachment_to_nextcloud(attachment_path, nextcloud_directory, original_filename):
+def save_attachment_to_nextcloud(attachment_path, nextcloud_directory):
     filename = os.path.basename(attachment_path)
-    unique_filename = filename
-    renamed = False
-
-    # Check if file already exists in Nextcloud and find a unique name
-    response = requests.get(
-        f'{NEXTCLOUD_BASE_URL}{nextcloud_directory}/{filename}',
-        auth=(NEXTCLOUD_USERNAME, NEXTCLOUD_PASSWORD)
-    )
-    if response.status_code == 200:  # File exists
-        unique_filename = get_unique_filename(nextcloud_directory, filename)
-        renamed = True
-
     with open(attachment_path, 'rb') as f:
         file_content = f.read()
     response = requests.put(
-        f'{NEXTCLOUD_BASE_URL}{nextcloud_directory}/{unique_filename}',
+        f'{NEXTCLOUD_BASE_URL}{nextcloud_directory}/{filename}',
         auth=(NEXTCLOUD_USERNAME, NEXTCLOUD_PASSWORD),
         data=file_content
     )
     if response.status_code == 201:
-        logger.info(f'Successfully uploaded {unique_filename} to Nextcloud under {nextcloud_directory}')
+        logger.info(f'Successfully uploaded {filename} to Nextcloud under {nextcloud_directory}')
     else:
-        logger.error(f'Failed to upload {unique_filename} to Nextcloud under {nextcloud_directory}')
+        logger.error(f'Failed to upload {filename} to Nextcloud under {nextcloud_directory}')
         logger.error(f'Response: {response.text}')
-    
-    return unique_filename, renamed
 
 # Function to send acknowledgment email
-def send_acknowledgment_email(sender_email, saved_folder, renamed_files):
+def send_acknowledgment_email(sender_email, saved_folder):
     # Email configuration
     SMTP_SERVER = os.getenv('SMTP_SERVER')
     SMTP_PORT = os.getenv('SMTP_PORT')
@@ -85,14 +62,7 @@ def send_acknowledgment_email(sender_email, saved_folder, renamed_files):
     msg['To'] = sender_email
     msg['Subject'] = 'Files Received and Saved'
 
-    body = f'Dear Sir / Madam,\n\nYour files have been received and saved under the workspace folder: {saved_folder}.\n\n'
-    
-    if renamed_files:
-        body += 'The following files were renamed to avoid duplicates:\n'
-        for original, renamed in renamed_files:
-            body += f'- {original} was renamed to {renamed}\n'
-    
-    body += 'Please see the file in the seminar room laptop.\n\nBest regards,\nTUBS IT'
+    body = f'Dear Sir / Madam,\n\nYour files have been received and saved under the workspace folder: {saved_folder}.Please see the file in the seminar room {saved_folder} laptop.\n\nBest regards,\nTUBS IT'
 
     msg.attach(MIMEText(body, 'plain'))
 
@@ -103,7 +73,6 @@ def send_acknowledgment_email(sender_email, saved_folder, renamed_files):
 
 def fetch_new_emails(last_check_time):
     new_attachments = []
-    renamed_files = []
     mail = imaplib.IMAP4_SSL(IMAP_SERVER)
     mail.login(EMAIL, PASSWORD)
     mail.select('inbox')
@@ -143,30 +112,19 @@ def fetch_new_emails(last_check_time):
                 if part.get_content_maintype() == 'multipart' or part.get('Content-Disposition') is None:
                     continue
                 if part.get_filename():
-                    filename = part.get_filename()
-                    local_attachment_path = os.path.join(ATTACHMENTS_DIR, filename)
-                    if not os.path.exists(local_attachment_path):
-                        with open(local_attachment_path, 'wb') as f:
+                    attachment_path = os.path.join(ATTACHMENTS_DIR, part.get_filename())
+                    if not os.path.isfile(attachment_path):
+                        with open(attachment_path, 'wb') as f:
                             f.write(part.get_payload(decode=True))
-                        logger.info(f'Saved attachment: {local_attachment_path}')
-                        saved_filename, renamed = save_attachment_to_nextcloud(local_attachment_path, saved_folder, filename)
-                        new_attachments.append(local_attachment_path)
-                        if renamed:
-                            renamed_files.append((filename, saved_filename))
+                        logger.info(f'Saved attachment: {attachment_path}')
+                        save_attachment_to_nextcloud(attachment_path, saved_folder)
+                        new_attachments.append(attachment_path)
                     else:
-                        unique_filename = get_unique_filename(ATTACHMENTS_DIR, filename)
-                        local_attachment_path = os.path.join(ATTACHMENTS_DIR, unique_filename)
-                        with open(local_attachment_path, 'wb') as f:
-                            f.write(part.get_payload(decode=True))
-                        logger.info(f'Saved attachment: {local_attachment_path}')
-                        saved_filename, renamed = save_attachment_to_nextcloud(local_attachment_path, saved_folder, unique_filename)
-                        new_attachments.append(local_attachment_path)
-                        if renamed:
-                            renamed_files.append((filename, saved_filename))
+                        logger.info(f'Attachment {part.get_filename()} already exists in the local directory.')
     
     # Send acknowledgment email
     if new_attachments:
-        send_acknowledgment_email(sender_email, saved_folder, renamed_files)
+        send_acknowledgment_email(sender_email, saved_folder)
 
     mail.close()
     mail.logout()
