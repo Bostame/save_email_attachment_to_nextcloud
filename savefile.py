@@ -41,7 +41,7 @@ def get_unique_filename(directory, filename):
         counter += 1
     return unique_filename
 
-def save_attachment_to_nextcloud(attachment_path, nextcloud_directory):
+def save_attachment_to_nextcloud(attachment_path, nextcloud_directory, original_filename):
     filename = os.path.basename(attachment_path)
     unique_filename = filename
     renamed = False
@@ -51,15 +51,8 @@ def save_attachment_to_nextcloud(attachment_path, nextcloud_directory):
         f'{NEXTCLOUD_BASE_URL}{nextcloud_directory}/{filename}',
         auth=(NEXTCLOUD_USERNAME, NEXTCLOUD_PASSWORD)
     )
-    counter = 1
-    while response.status_code == 200:  # File exists
-        base, extension = os.path.splitext(filename)
-        unique_filename = f"{base}_{counter}{extension}"
-        response = requests.get(
-            f'{NEXTCLOUD_BASE_URL}{nextcloud_directory}/{unique_filename}',
-            auth=(NEXTCLOUD_USERNAME, NEXTCLOUD_PASSWORD)
-        )
-        counter += 1
+    if response.status_code == 200:  # File exists
+        unique_filename = get_unique_filename(nextcloud_directory, filename)
         renamed = True
 
     with open(attachment_path, 'rb') as f:
@@ -150,15 +143,26 @@ def fetch_new_emails(last_check_time):
                 if part.get_content_maintype() == 'multipart' or part.get('Content-Disposition') is None:
                     continue
                 if part.get_filename():
-                    unique_filename = get_unique_filename(ATTACHMENTS_DIR, part.get_filename())
-                    attachment_path = os.path.join(ATTACHMENTS_DIR, unique_filename)
-                    with open(attachment_path, 'wb') as f:
-                        f.write(part.get_payload(decode=True))
-                    logger.info(f'Saved attachment: {attachment_path}')
-                    saved_filename, renamed = save_attachment_to_nextcloud(attachment_path, saved_folder)
-                    new_attachments.append(attachment_path)
-                    if renamed:
-                        renamed_files.append((part.get_filename(), saved_filename))
+                    filename = part.get_filename()
+                    local_attachment_path = os.path.join(ATTACHMENTS_DIR, filename)
+                    if not os.path.exists(local_attachment_path):
+                        with open(local_attachment_path, 'wb') as f:
+                            f.write(part.get_payload(decode=True))
+                        logger.info(f'Saved attachment: {local_attachment_path}')
+                        saved_filename, renamed = save_attachment_to_nextcloud(local_attachment_path, saved_folder, filename)
+                        new_attachments.append(local_attachment_path)
+                        if renamed:
+                            renamed_files.append((filename, saved_filename))
+                    else:
+                        unique_filename = get_unique_filename(ATTACHMENTS_DIR, filename)
+                        local_attachment_path = os.path.join(ATTACHMENTS_DIR, unique_filename)
+                        with open(local_attachment_path, 'wb') as f:
+                            f.write(part.get_payload(decode=True))
+                        logger.info(f'Saved attachment: {local_attachment_path}')
+                        saved_filename, renamed = save_attachment_to_nextcloud(local_attachment_path, saved_folder, unique_filename)
+                        new_attachments.append(local_attachment_path)
+                        if renamed:
+                            renamed_files.append((filename, saved_filename))
     
     # Send acknowledgment email
     if new_attachments:
