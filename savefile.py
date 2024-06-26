@@ -32,6 +32,18 @@ NEXTCLOUD_DIRECTORY = os.getenv('NEXTCLOUD_BASE_URL', 'NEXTCLOUD_DIRECTORY')
 # Directory for saving attachments
 ATTACHMENTS_DIR = './attachments'
 
+# Function to load allowed extensions from file
+def load_allowed_extensions(file_path='extensions.txt'):
+    with open(file_path, 'r') as file:
+        extensions = file.read().splitlines()
+    return set(ext.strip() for ext in extensions)
+
+# Load allowed extensions
+ALLOWED_EXTENSIONS = load_allowed_extensions()
+
+def is_allowed_file(filename):
+    return os.path.splitext(filename)[1].lower() in ALLOWED_EXTENSIONS
+
 def save_attachment_to_nextcloud(attachment_path, nextcloud_directory):
     filename = os.path.basename(attachment_path)
     with open(attachment_path, 'rb') as f:
@@ -63,6 +75,30 @@ def send_acknowledgment_email(sender_email, saved_folder):
     msg['Subject'] = 'Files Received and Saved'
 
     body = f'Dear Sir / Madam,\n\nYour files have been received and saved under the workspace folder: {saved_folder}.Please see the file in the seminar room {saved_folder} laptop.\n\nBest regards,\nTUBS IT'
+
+    msg.attach(MIMEText(body, 'plain'))
+
+    # Connect to SMTP server and send the email
+    with smtplib.SMTP_SSL(SMTP_SERVER, SMTP_PORT) as server:
+        server.login(SMTP_USERNAME, SMTP_PASSWORD)
+        server.sendmail(EMAIL_FROM, sender_email, msg.as_string())
+
+# Function to send invalid file extension email
+def send_invalid_extension_email(sender_email):
+    # Email configuration
+    SMTP_SERVER = os.getenv('SMTP_SERVER')
+    SMTP_PORT = os.getenv('SMTP_PORT')
+    SMTP_USERNAME = os.getenv('SMTP_USERNAME')
+    SMTP_PASSWORD = os.getenv('SMTP_PASSWORD')
+    EMAIL_FROM = os.getenv('EMAIL_FROM')
+
+    # Compose the message
+    msg = MIMEMultipart()
+    msg['From'] = EMAIL_FROM
+    msg['To'] = sender_email
+    msg['Subject'] = 'Invalid File Extension'
+
+    body = 'Dear Sir / Madam,\n\nOne or more files you sent have an unsupported file extension. Please check the file and send a valid file.\n\nBest regards,\nTUBS IT'
 
     msg.attach(MIMEText(body, 'plain'))
 
@@ -107,24 +143,35 @@ def fetch_new_emails(last_check_time):
             logger.warning(f"No specific directory found for subject: {subject}. Using fallback directory.")
             saved_folder = 'euref-lecturer/Campus-Euref/others'
 
+        invalid_extension_found = False
+
         if msg.get_content_maintype() == 'multipart':
             for part in msg.walk():
                 if part.get_content_maintype() == 'multipart' or part.get('Content-Disposition') is None:
                     continue
                 if part.get_filename():
-                    attachment_path = os.path.join(ATTACHMENTS_DIR, part.get_filename())
-                    if not os.path.isfile(attachment_path):
-                        with open(attachment_path, 'wb') as f:
-                            f.write(part.get_payload(decode=True))
-                        logger.info(f'Saved attachment: {attachment_path}')
-                        save_attachment_to_nextcloud(attachment_path, saved_folder)
-                        new_attachments.append(attachment_path)
+                    attachment_filename = part.get_filename()
+                    if is_allowed_file(attachment_filename):
+                        attachment_path = os.path.join(ATTACHMENTS_DIR, attachment_filename)
+                        if not os.path.isfile(attachment_path):
+                            with open(attachment_path, 'wb') as f:
+                                f.write(part.get_payload(decode=True))
+                            logger.info(f'Saved attachment: {attachment_path}')
+                            save_attachment_to_nextcloud(attachment_path, saved_folder)
+                            new_attachments.append(attachment_path)
+                        else:
+                            logger.info(f'Attachment {part.get_filename()} already exists in the local directory.')
                     else:
-                        logger.info(f'Attachment {part.get_filename()} already exists in the local directory.')
+                        logger.warning(f'Attachment {attachment_filename} has an unsupported file extension and was skipped.')
+                        invalid_extension_found = True
     
-    # Send acknowledgment email
-    if new_attachments:
-        send_acknowledgment_email(sender_email, saved_folder)
+        # Send acknowledgment email for valid attachments
+        if new_attachments:
+            send_acknowledgment_email(sender_email, saved_folder)
+
+        # Send invalid extension email if any invalid extension found
+        if invalid_extension_found:
+            send_invalid_extension_email(sender_email)
 
     mail.close()
     mail.logout()
