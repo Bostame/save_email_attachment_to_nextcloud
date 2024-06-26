@@ -32,6 +32,9 @@ NEXTCLOUD_DIRECTORY = os.getenv('NEXTCLOUD_BASE_URL', 'NEXTCLOUD_DIRECTORY')
 # Directory for saving attachments
 ATTACHMENTS_DIR = './attachments'
 
+# Track senders notified about invalid extensions
+notified_senders = set()
+
 # Function to load allowed extensions from file
 def load_allowed_extensions(file_path='extensions.txt'):
     with open(file_path, 'r') as file:
@@ -74,7 +77,7 @@ def send_acknowledgment_email(sender_email, saved_folder):
     msg['To'] = sender_email
     msg['Subject'] = 'Files Received and Saved'
 
-    body = f'Dear Sir / Madam,\n\nYour files have been received and saved under the workspace folder: {saved_folder}.Please see the file in the seminar room {saved_folder} laptop.\n\nBest regards,\nTUBS IT'
+    body = f'Dear Sir / Madam,\n\nYour files have been received and saved under the workspace folder: {saved_folder}. Please see the file in the seminar room {saved_folder} laptop.\n\nBest regards,\nTUBS IT'
 
     msg.attach(MIMEText(body, 'plain'))
 
@@ -169,9 +172,10 @@ def fetch_new_emails(last_check_time):
         if new_attachments:
             send_acknowledgment_email(sender_email, saved_folder)
 
-        # Send invalid extension email if any invalid extension found
-        if invalid_extension_found:
+        # Send invalid extension email if any invalid extension found and sender not already notified
+        if invalid_extension_found and sender_email not in notified_senders:
             send_invalid_extension_email(sender_email)
+            notified_senders.add(sender_email)
 
     mail.close()
     mail.logout()
